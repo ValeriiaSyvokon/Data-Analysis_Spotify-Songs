@@ -1,7 +1,3 @@
-# Standalone combined script for Lab 4.
-# This is a real monolithic R script: it does not source external R files and
-# does not store the lab code as quoted strings.
-
 suppressPackageStartupMessages({
   base_required_packages <- c("dplyr", "ggplot2", "mgcv", "readr", "tibble", "tidyr")
   vlad_required_packages <- c("np", "FactoMineR", "factoextra", "gratia")
@@ -162,16 +158,7 @@ print_lera_results <- function(env) {
 
 
 run_vlad_part <- function() {
-  # ==============================================================================
-  # Крок 0. Встановлення пакетів (запустіть один раз, прибравши символ #)
-  # ==============================================================================
-  # install.packages(c("np", "mgcv", "FactoMineR", "factoextra", "ggplot2", "dplyr", "gratia"))
 
-  # ==============================================================================
-  # Крок 1. Підготовка даних (ВЕРСІЯ ДЛЯ ШВИДКОГО ТЕСТУ)
-  # ==============================================================================
-
-  # Завантаження необхідних бібліотек
   library(np)          # Для ядрової та частково лінійної регресії
   library(mgcv)        # Для узагальнених адитивних моделей (GAM)
   library(FactoMineR)  # Для аналізу головних компонент (PCA)
@@ -186,7 +173,6 @@ run_vlad_part <- function() {
   songs_clean <- songs_clean %>% 
     mutate(genre = as.factor(genre))
 
-  # Фіксація генератора випадкових чисел
   set.seed(123)
 
   # 1. Мікро-вибірка для важких непараметричних методів (np)
@@ -197,10 +183,7 @@ run_vlad_part <- function() {
   # Використовуємо 5000 рядків замість 500k для швидкого тесту.
   songs_test_gam <- songs_clean %>% sample_n(150)
 
-  # ==============================================================================
-  # Крок 2. Оцінювання непараметричних моделей
-  # ==============================================================================
-
+  
   # --- 2.1 Ядрова регресія (Kernel regression) ---
   # Навчаємо на мікро-вибірці (songs_sample)
   bw_lc <- npregbw(danceability ~ tempo, data = songs_sample, regtype = "lc")
@@ -225,9 +208,7 @@ run_vlad_part <- function() {
                      s(year) + genre, 
                    data = songs_test_gam, method = "REML")
 
-  # ==============================================================================
-  # Крок 3. Візуалізація результатів непараметрики
-  # ==============================================================================
+
 
   # --- 3.1 Візуалізація ядрової регресії (NW та LL) ---
   tempo_grid <- data.frame(tempo = seq(min(songs_sample$tempo, na.rm = TRUE), 
@@ -268,9 +249,8 @@ run_vlad_part <- function() {
   print(p_gam)
 
 
-  # ==============================================================================
-  # Крок 4. Аналіз головних компонент (PCA)
-  # ==============================================================================
+
+  # Аналіз головних компонент (PCA)
 
   # Використовуємо зменшену вибірку (songs_test_gam) для швидкого тесту
   pca_data <- songs_test_gam %>%
@@ -1594,9 +1574,9 @@ run_lera_part <- function() {
     bind_rows(out)
   }
 
-  # ==========================================
+ 
   # 1. Завантаження та підготовка даних
-  # ==========================================
+
   section_title("Loading and preparing data")
   songs_raw <- readRDS(input_path)
 
@@ -1611,9 +1591,9 @@ run_lera_part <- function() {
       genre = as.factor(genre)
     )
 
-  # ==========================================
+
   # 2. PCA (Аналіз головних компонент)
-  # ==========================================
+
   section_title("Principal component analysis of audio controls")
   pca_matrix <- df %>% select(all_of(audio_vars))
   pca_fit <- prcomp(pca_matrix, center = TRUE, scale. = TRUE)
@@ -1644,9 +1624,9 @@ run_lera_part <- function() {
     labs(title = "PCA Score Plot: PC1 vs PC2", color = "Контент") + theme_minimal()
   ggsave(file.path(output_dir, "fig_pca_biplot.png"), p_biplot, width = 8, height = 6)
 
-  # ==========================================
+
   # 3. Непараметричні моделі (PLM та GAM)
-  # ==========================================
+
   section_title("Train-validation split & GAM models")
   train_id <- sample.int(nrow(df), size = floor(0.8 * nrow(df)))
   train_model <- df[train_id, ] %>% sample_n(min(nrow(.), 50000)) # Обмеження для швидкості
@@ -1665,9 +1645,9 @@ run_lera_part <- function() {
   plot(gam_fit, shade = TRUE, scale = 0, trans = plogis, shift = coef(gam_fit)[1]) 
   dev.off()
 
-  # ==========================================
+
   # 4. Графік умовної залежності (Conditional prediction curve)
-  # ==========================================
+
   grid_dance <- seq(0, 1, length.out = 100)
   # Фіксуємо інші змінні на рівні медіани/моди
   ref_row <- tibble(
@@ -1696,9 +1676,9 @@ run_lera_part <- function() {
          x = "Danceability", y = "Ймовірність Explicit-контенту") + theme_minimal()
   ggsave(file.path(output_dir, "fig_conditional_curve.png"), p_curve, width = 8, height = 5)
 
-  # ==========================================
-  # 5. Ядрова регресія (NW vs LL) - ВИПРАВЛЕНО
-  # ==========================================
+
+  # 5. Ядрова регресія (NW vs LL)
+
   section_title("Kernel regression (NW vs LL)")
 
   # Беремо оригінальний ключовий регресор (danceability) та два найважливіші контролі 
