@@ -169,14 +169,14 @@ run_vlad_part <- function() {
 
   songs_clean <- readRDS("songs_clean.rds")
 
-  # Перетворюємо genre на фактор (обов'язково для GAM та np)
+
   songs_clean <- songs_clean %>% 
     mutate(genre = as.factor(genre))
 
   set.seed(123)
 
-  # 1. Мікро-вибірка для важких непараметричних методів (np)
-  # 150 рядків відпрацюють дуже швидко.
+  # 1. Мікровибірка для важких непараметричних методів (np)
+
   songs_sample <- songs_clean %>% sample_n(150)
 
   # 2. Зменшена вибірка для GAM та PCA
@@ -184,8 +184,8 @@ run_vlad_part <- function() {
   songs_test_gam <- songs_clean %>% sample_n(150)
 
   
-  # --- 2.1 Ядрова регресія (Kernel regression) ---
-  # Навчаємо на мікро-вибірці (songs_sample)
+  # 2.1 Ядрова регресія (Kernel regression)
+  # Навчаємо на мікровибірці (songs_sample)
   bw_lc <- npregbw(danceability ~ tempo, data = songs_sample, regtype = "lc")
   model_lc <- npreg(bw_lc)
 
@@ -193,7 +193,7 @@ run_vlad_part <- function() {
   model_ll <- npreg(bw_ll)
 
 
-  # --- 2.2 Частково лінійна регресія (Partially linear regression) ---
+  # 2.2 Частково лінійна регресія (Partially linear regression)
   # Навчаємо на мікро-вибірці (songs_sample)
   bw_pl <- npplregbw(danceability ~ genre + energy + instrumentalness + 
                        speechiness + acousticness + year | tempo + valence, 
@@ -201,8 +201,7 @@ run_vlad_part <- function() {
   model_pl <- npplreg(bw_pl)
 
 
-  # --- 2.3 Узагальнена адитивна модель (GAM) ---
-  # Навчаємо на зменшеній вибірці (songs_test_gam) замість усього датасету
+  # 2.3 Узагальнена адитивна модель (GAM)
   model_gam <- gam(danceability ~ s(tempo) + s(valence) + s(energy) + 
                      s(acousticness) + s(speechiness) + s(instrumentalness) + 
                      s(year) + genre, 
@@ -210,7 +209,7 @@ run_vlad_part <- function() {
 
 
 
-  # --- 3.1 Візуалізація ядрової регресії (NW та LL) ---
+  # 3.1 Візуалізація ядрової регресії (NW та LL)
   tempo_grid <- data.frame(tempo = seq(min(songs_sample$tempo, na.rm = TRUE), 
                                        max(songs_sample$tempo, na.rm = TRUE), 
                                        length.out = 200))
@@ -240,11 +239,11 @@ run_vlad_part <- function() {
 
   print(p_kernel)
 
-  # --- 3.2 Результати частково лінійної регресії ---
+  # 3.2 Результати частково лінійної регресії
   cat("\n=== Коефіцієнти лінійної (параметричної) частини ===\n")
   summary(model_pl)
 
-  # --- 3.3 Візуалізація GAM ---
+  # 3.3 Візуалізація GAM
   p_gam <- draw(model_gam, select = c("s(tempo)", "s(valence)"))
   print(p_gam)
 
@@ -252,7 +251,6 @@ run_vlad_part <- function() {
 
   # Аналіз головних компонент (PCA)
 
-  # Використовуємо зменшену вибірку (songs_test_gam) для швидкого тесту
   pca_data <- songs_test_gam %>%
     select(danceability, energy, loudness, speechiness, 
            acousticness, instrumentalness, liveness, valence, tempo) %>%
@@ -260,12 +258,12 @@ run_vlad_part <- function() {
 
   res_pca <- PCA(pca_data, scale.unit = TRUE, graph = FALSE)
 
-  # --- 4.1 Графік власних чисел (Scree plot) ---
+  # 4.1 Графік власних чисел (Scree plot)
   p_scree <- fviz_eig(res_pca, addlabels = TRUE, ylim = c(0, 50),
                       title = "Scree plot: Відсоток поясненої дисперсії")
   print(p_scree)
 
-  # --- 4.2 Графік проєкцій змінних на перші 2 компоненти ---
+  # 4.2 Графік проєкцій змінних на перші 2 компоненти
   p_vars <- fviz_pca_var(res_pca, 
                          col.var = "contrib", 
                          gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
@@ -273,7 +271,7 @@ run_vlad_part <- function() {
                          title = "PCA: Проєкції аудіо-характеристик")
   print(p_vars)
 
-  # --- 4.3 Біграфік (Biplot) ---
+  # 4.3 Біграфік (Biplot)
   p_biplot <- fviz_pca_biplot(res_pca, 
                               select.ind = list(contrib = 100), 
                               label = "var",        
@@ -283,7 +281,7 @@ run_vlad_part <- function() {
                               title = "Biplot (Змінні + Топ-100 спостережень за внеском)")
   print(p_biplot)
 
-  # --- Текстові результати для регресій ---
+  #Текстові результати для регресій
 
   # 1. Ядрова регресія (покаже R-квадрат, ширину вікна та значимість)
   cat("\n=== Ядрова регресія (Nadaraya-Watson) ===\n")
@@ -297,13 +295,13 @@ run_vlad_part <- function() {
   cat("\n=== Узагальнена адитивна модель (GAM) ===\n")
   summary(model_gam)
 
-  # --- Текстові результати для PCA ---
+  # Текстові результати для PCA
 
   # Базове текстове зведення PCA
   cat("\n=== Зведені результати PCA ===\n")
   summary(res_pca)
 
-  # Виведення конкретних числових матриць (дуже зручно для аналізу):
+  # Виведення конкретних числових матриць:
   cat("\n--- Власні числа (відсоток поясненої дисперсії) ---\n")
   print(res_pca$eig)
 
